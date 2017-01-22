@@ -62,6 +62,12 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
                         return Observable.from(objects);
                     }
                 })
+                .map(new Func1<T, T>() {
+                    @Override
+                    public T call(T object) {
+                        return realm.copyFromRealm(object);
+                    }
+                })
                 .filter(new Func1<T, Boolean>() {
                     @Override
                     public Boolean call(T object) {
@@ -69,12 +75,6 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
                         if (index >= 0)
                             return !Utils.areObjectsEquals(object.getClass(), object, adapterItems.get(index));
                         return true;
-                    }
-                })
-                .map(new Func1<T, T>() {
-                    @Override
-                    public T call(T object) {
-                        return realm.copyFromRealm(object);
                     }
                 })
                 .subscribeOn(AndroidSchedulers.from(realmThread.getLooper()))
@@ -117,6 +117,7 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
     private class RealmSubscriber implements Action1<T> {
         @Override
         public void call(T object) {
+            notifyDataSetChanged();
             int index = adapterItems.indexOf(object);
             if (index >= 0) {
                 adapterItems.set(index, object);
