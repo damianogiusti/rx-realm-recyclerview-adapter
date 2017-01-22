@@ -104,10 +104,10 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
     }
 
     public void release() {
-        subscription.unsubscribe();
         realmThreadHandler.post(new Runnable() {
             @Override
             public void run() {
+                subscription.unsubscribe();
                 realm.close();
                 realm = null;
                 realmThread.quit();
@@ -128,7 +128,8 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
             int positionInResults = pair.second;
 
             int index = adapterItems.indexOf(object);
-            if (index >= 0) {
+            boolean found = index >= 0;
+            if (found) {
                 adapterItems.set(index, object);
                 notifyItemChanged(index);
             } else {
