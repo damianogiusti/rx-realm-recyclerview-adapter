@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity implements
         citiesAdapter = new CitiesAdapter(getApplicationContext(), new RealmOperations<City>() {
             @Override
             public RealmResults<City> execute(Realm realm) {
-                return realm.where(City.class).findAll();
+                return realm.where(City.class).findAllSorted("name");
             }
         });
 

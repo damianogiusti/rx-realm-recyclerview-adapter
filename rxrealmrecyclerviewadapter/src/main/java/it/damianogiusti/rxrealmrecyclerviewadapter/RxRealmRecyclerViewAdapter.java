@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,25 +57,31 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
                         results.asObservable().subscribe(subscriber);
                     }
                 })
-                .flatMap(new Func1<RealmResults<T>, Observable<T>>() {
+                .flatMap(new Func1<RealmResults<T>, Observable<Pair<T, Integer>>>() {
                     @Override
-                    public Observable<T> call(RealmResults<T> objects) {
-                        return Observable.from(objects);
+                    public Observable<Pair<T, Integer>> call(RealmResults<T> objects) {
+                        return Observable.from(objects).map(new Func1<T, Pair<T, Integer>>() {
+                            int position = 0;
+
+                            @Override
+                            public Pair<T, Integer> call(T t) {
+                                return new Pair<>(t, position++);
+                            }
+                        });
                     }
                 })
-                .map(new Func1<T, T>() {
+                .map(new Func1<Pair<T, Integer>, Pair<T, Integer>>() {
                     @Override
-                    public T call(T object) {
-                        return realm.copyFromRealm(object);
+                    public Pair<T, Integer> call(Pair<T, Integer> pair) {
+                        return new Pair<>(realm.copyFromRealm(pair.first), pair.second);
                     }
                 })
-                .filter(new Func1<T, Boolean>() {
+                .filter(new Func1<Pair<T, Integer>, Boolean>() {
                     @Override
-                    public Boolean call(T object) {
-                        int index = adapterItems.indexOf(object);
-                        if (index >= 0)
-                            return !Utils.areObjectsEquals(object.getClass(), object, adapterItems.get(index));
-                        return true;
+                    public Boolean call(Pair<T, Integer> pair) {
+                        int index = adapterItems.indexOf(pair.first);
+                        boolean found = index >= 0;
+                        return !found || !Utils.areObjectsEquals(pair.first.getClass(), pair.first, adapterItems.get(index));
                     }
                 })
                 .subscribeOn(AndroidSchedulers.from(realmThread.getLooper()))
@@ -114,17 +121,19 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
         return context;
     }
 
-    private class RealmSubscriber implements Action1<T> {
+    private class RealmSubscriber implements Action1<Pair<T, Integer>> {
         @Override
-        public void call(T object) {
-            notifyDataSetChanged();
+        public void call(Pair<T, Integer> pair) {
+            T object = pair.first;
+            int positionInResults = pair.second;
+
             int index = adapterItems.indexOf(object);
             if (index >= 0) {
                 adapterItems.set(index, object);
                 notifyItemChanged(index);
             } else {
-                adapterItems.add(object);
-                notifyItemInserted(adapterItems.indexOf(object));
+                adapterItems.add(positionInResults, object);
+                notifyItemInserted(positionInResults);
             }
         }
     }
