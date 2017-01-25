@@ -34,6 +34,6 @@ public class City extends RealmObject {
         if (!(obj instanceof City))
             return false;
         City city = (City) obj;
-        return id.equals(city.id);
+        return id.equals(city.id) && name.equals(city.name);
     }
 }

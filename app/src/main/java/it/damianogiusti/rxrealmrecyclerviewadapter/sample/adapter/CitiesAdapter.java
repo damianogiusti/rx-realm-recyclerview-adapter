@@ -31,6 +31,11 @@ public class CitiesAdapter extends RxRealmRecyclerViewAdapter<City, CitiesViewHo
     }
 
     @Override
+    protected boolean areItemsEquals(City item1, City item2) {
+        return item1.equals(item2);
+    }
+
+    @Override
     public void onBindViewHolder(CitiesViewHolder holder, City item, int position) {
         holder.txtName.setText(item.getName());
     }

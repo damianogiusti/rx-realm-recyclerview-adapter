@@ -3,6 +3,7 @@ package it.damianogiusti.rxrealmrecyclerviewadapter;
 import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.WorkerThread;
 import android.support.v7.widget.RecyclerView;
 import android.util.Pair;
 
@@ -79,9 +80,15 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
                 .filter(new Func1<Pair<T, Integer>, Boolean>() {
                     @Override
                     public Boolean call(Pair<T, Integer> pair) {
-                        int index = adapterItems.indexOf(pair.first);
-                        boolean found = index >= 0;
-                        return !found || !Utils.areObjectsEquals(pair.first.getClass(), pair.first, adapterItems.get(index));
+                        int index = -1;
+                        for (int i = 0; i < adapterItems.size(); i++) {
+                            T adapterItem = adapterItems.get(i);
+                            if (areItemsEquals(adapterItem, pair.first)) {
+                                index = i;
+                                break;
+                            }
+                        }
+                        return index >= 0;
                     }
                 })
                 .subscribeOn(AndroidSchedulers.from(realmThread.getLooper()))
@@ -90,6 +97,9 @@ public abstract class RxRealmRecyclerViewAdapter<T extends RealmModel, VH extend
     }
 
     protected abstract RealmConfiguration getRealmConfiguration();
+
+    @WorkerThread
+    protected abstract boolean areItemsEquals(T item1, T item2);
 
     @Override
     public int getItemCount() {
