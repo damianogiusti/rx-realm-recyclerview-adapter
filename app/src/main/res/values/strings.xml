@@ -3,4 +3,5 @@
     <string name="input_name_here">Input city name here…</string>
     <string name="add">Add new city</string>
     <string name="add_new_city">Add new city</string>
+    <string name="update">Update</string>
 </resources>

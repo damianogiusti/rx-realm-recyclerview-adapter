@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity implements
         NewCityDialog.Listener {
 
     private static final String NEW_CITY_DIALOG_TAG = "MainActivity.NewCityDialog";
+    private static final String UPDATE_CITY_DIALOG_TAG = "MainActivity.UpdateCityDialog";
 
     private RecyclerView recyclerView;
     private Button btnAddCity;
@@ -53,6 +54,14 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
+        citiesAdapter.observeClickEvents()
+                .subscribe(new Action1<City>() {
+                    @Override
+                    public void call(City city) {
+                        onUpdateCityClicked(city);
+                    }
+                });
+
         citiesAdapter.observeLongClickEvents()
                 .subscribe(new Action1<City>() {
                     @Override
@@ -61,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements
                             @Override
                             public void execute(Realm realm) {
                                 realm.where(City.class).equalTo("id", city.getId()).findFirst().deleteFromRealm();
-                                ;
                             }
                         });
                     }
@@ -85,6 +93,11 @@ public class MainActivity extends AppCompatActivity implements
                 .show(getFragmentManager(), NEW_CITY_DIALOG_TAG);
     }
 
+    private void onUpdateCityClicked(City city) {
+        NewCityDialog.newInstance(city.getId())
+                .show(getFragmentManager(), UPDATE_CITY_DIALOG_TAG);
+    }
+
     @Override
     public void onCityCreationConfirmed(String cityName) {
         final City city = new City();
@@ -94,6 +107,16 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void execute(Realm realm) {
                 realm.insert(city);
+            }
+        });
+    }
+
+    @Override
+    public void onCityUpdateConfirmed(final City cityToUpdate, final String newName) {
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                cityToUpdate.setName(newName);
             }
         });
     }

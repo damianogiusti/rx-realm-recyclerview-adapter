@@ -24,6 +24,8 @@ public class NewCityDialog extends DialogFragment {
     public interface Listener {
         void onCityCreationConfirmed(String cityName);
 
+        void onCityUpdateConfirmed(City oldCity, String newName);
+
         Realm getRealm();
     }
 
@@ -31,39 +33,48 @@ public class NewCityDialog extends DialogFragment {
         return new NewCityDialog();
     }
 
-    public static NewCityDialog newInstance(long cityId) {
+    public static NewCityDialog newInstance(String cityId) {
         NewCityDialog newCityDialog = new NewCityDialog();
 
         Bundle bundle = new Bundle();
-        bundle.putLong(CITY_ID_KEY_FOR_BUNDLE, cityId);
+        bundle.putString(CITY_ID_KEY_FOR_BUNDLE, cityId);
         newCityDialog.setArguments(bundle);
 
         return newCityDialog;
     }
 
-    private Listener listener;
+    private Listener baseActivity;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         View view = LayoutInflater.from(getActivity()).inflate(R.layout.new_city_dialog_layout, null, false);
 
-        long id = -1;
+        String id = null;
         if (getArguments() != null)
-            id = getArguments().getLong(CITY_ID_KEY_FOR_BUNDLE, -1);
+            id = getArguments().getString(CITY_ID_KEY_FOR_BUNDLE, null);
 
+        final boolean isUpdate = (id != null);
         final EditText txtNewCityName = (EditText) view.findViewById(R.id.txtNewCityName);
 
-        if (id >= 0 && listener != null)
-            txtNewCityName.setText(listener.getRealm().where(City.class).equalTo("id", id).findFirst().getName());
+        City cityToUpdate = null;
+        if (isUpdate && baseActivity != null) {
+            cityToUpdate = baseActivity.getRealm().where(City.class).equalTo("id", id).findFirst();
+            txtNewCityName.setText(cityToUpdate.getName());
+        }
 
+        final City finalCityToUpdate = cityToUpdate;
         AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity())
                 .setView(view)
-                .setTitle(R.string.add)
+                .setTitle(isUpdate ? R.string.update : R.string.add)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        if (listener != null)
-                            listener.onCityCreationConfirmed(txtNewCityName.getText().toString());
+                        if (baseActivity != null) {
+                            if (isUpdate)
+                                baseActivity.onCityUpdateConfirmed(finalCityToUpdate, txtNewCityName.getText().toString());
+                            else
+                                baseActivity.onCityCreationConfirmed(txtNewCityName.getText().toString());
+                        }
                     }
                 });
         return dialog.create();
@@ -73,6 +84,6 @@ public class NewCityDialog extends DialogFragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (activity instanceof Listener)
-            listener = (Listener) activity;
+            baseActivity = (Listener) activity;
     }
 }
