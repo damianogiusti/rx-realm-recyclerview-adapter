@@ -15,6 +15,7 @@ import it.damianogiusti.rxrealmrecyclerviewadapter.RealmOperations;
 import it.damianogiusti.rxrealmrecyclerviewadapter.sample.adapter.CitiesAdapter;
 import it.damianogiusti.rxrealmrecyclerviewadapter.sample.dialogs.NewCityDialog;
 import it.damianogiusti.rxrealmrecyclerviewadapter.sample.model.City;
+import rx.functions.Action1;
 
 public class MainActivity extends AppCompatActivity implements
         NewCityDialog.Listener {
@@ -51,6 +52,20 @@ public class MainActivity extends AppCompatActivity implements
                 onAddCityClicked();
             }
         });
+
+        citiesAdapter.observeLongClickEvents()
+                .subscribe(new Action1<City>() {
+                    @Override
+                    public void call(final City city) {
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                realm.where(City.class).equalTo("id", city.getId()).findFirst().deleteFromRealm();
+                                ;
+                            }
+                        });
+                    }
+                });
     }
 
     @Override
